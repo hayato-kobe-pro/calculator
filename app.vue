@@ -50,7 +50,7 @@
     background: #EEEEEE;
   }
   .btn.equal_btn {
-    background: #1700FF;
+    background: red;
     color: #FFFFFF;
   }
 </style>
