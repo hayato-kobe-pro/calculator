@@ -11,8 +11,8 @@
     <input type="button" value="(" @click="checkButton('(')" class="btn symbol_btn">
     <input type="button" value=")" @click="checkButton(')')" class="btn symbol_btn">
     <input type="button" value="%" @click="checkButton('%')" class="btn symbol_btn">
-    <input type="button" value="CE" @click="checkButton('CE')" class="btn symbol_btn CE_btn">
-    <input type="button" value="AC" @click="checkButton('AC')" class="btn symbol_btn AC_btn hide_btn">
+    <input type="button" value="CE" @click="checkButton('CE')" class="btn symbol_btn CE_btn" v-if="showCEButton">
+    <input type="button" value="AC" @click="checkButton('AC')" class="btn symbol_btn AC_btn" v-else>
     <input type="button" value=7 @click="checkButton(7)" class="btn num_btn">
     <input type="button" value=8 @click="checkButton(8)" class="btn num_btn">
     <input type="button" value=9 @click="checkButton(9)" class="btn num_btn">
@@ -36,6 +36,7 @@
 export default {
   data() {
     return {
+      showCEButton: true,
       formula: null,
       formulaArray: [],
       calculateArray: [],
@@ -48,8 +49,7 @@ export default {
       switch(value){
         case '=':
           this.calculate(this.formula);
-          document.querySelector('.CE_btn').classList.add('hide_btn');
-          document.querySelector('.AC_btn').classList.remove('hide_btn');
+          this.showCEButton = !this.showCEButton;
           break;
         case 'CE':
           console.log('CE');
