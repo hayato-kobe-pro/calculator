@@ -37,9 +37,8 @@ export default {
   data() {
     return {
       showCEButton: true,
-      viewFormula: null,
       formulaArray: [],
-      calculateArray: [],
+      viewFormula: null,
       MudAndDivCounter: 0,
       error: '',
       result: null
@@ -49,7 +48,7 @@ export default {
     checkButton(value){
       switch(value){
         case '=':
-          this.calculate();
+          this.calculationProcessingOrder();
           break;
         case 'CE':
           // this.formulaArray.pop();
@@ -65,52 +64,50 @@ export default {
           this.updateCounter(value);
       }
     },
-    updateFormula(checkedValue) {
+    updateFormula(inputValue) {
       
-      if (this.formulaArray[this.formulaArray.length - 1] === '%' && typeof checkedValue === "number") {
+      if (this.formulaArray[this.formulaArray.length - 1] === '%' && typeof inputValue === "number") {
         this.formulaArray.push('×');
-        this.formulaArray.push(checkedValue);
+        this.formulaArray.push(inputValue);
         this.MudAndDivCounter += 1;
         console.log(1);
       }
-      else if(this.result && typeof checkedValue === "number") {
+      else if (this.formulaArray[this.formulaArray.length - 1] === '%') {
+        this.formulaArray.push(inputValue);
+      }
+      else if(this.result && typeof inputValue === "number") {
         // resultがある状態でnumを入力するとformulaArrayとともにリセット
-        this.formulaArray[0] = checkedValue;
+        this.formulaArray[0] = inputValue;
         this.result = null;
         console.log(2);        
       }
-      else if(typeof checkedValue === "number" 
+      else if(typeof inputValue === "number" 
       && typeof this.formulaArray[this.formulaArray.length - 1] === "number"){
         // 数字が連続で入力された時の計算
-        this.formulaArray[this.formulaArray.length - 1] = this.formulaArray[this.formulaArray.length - 1] * 10 + checkedValue;
+        this.formulaArray[this.formulaArray.length - 1] = this.formulaArray[this.formulaArray.length - 1] * 10 + inputValue;
         console.log(3);
       }
       else if((this.formulaArray.length !== 0 
-      || typeof checkedValue === "number") 
-      && (typeof checkedValue === "number" 
-      || typeof this.formulaArray[this.formulaArray.length - 1] === "number")){
+      || typeof inputValue === "number") 
+      || typeof this.formulaArray[this.formulaArray.length - 1] === "number"){
         // 数字や演算子を追加（通常処理）
-        this.formulaArray.push(checkedValue);
+        this.formulaArray.push(inputValue);
         this.result = null;
         console.log(4);
       }
-      else if (this.formulaArray[this.formulaArray.length - 1] === '%') {
-        this.formulaArray.push(checkedValue);
-      }
-      else {
+      else if(typeof this.formulaArray[this.formulaArray.length - 1] === "string" && inputValue === "string") {
         // カウンターの数の調整
         this.updateCounter();
         // 演算子が連続で押された時に新しい入力に更新する。
-        this.formulaArray[this.formulaArray.length - 1] = checkedValue;
+        this.formulaArray[this.formulaArray.length - 1] = inputValue;
         console.log(5);
       }
-      
-      // viewFormulaのリセット
+
       this.viewFormula = '';
       
       // 表示(viewFomula)の更新
       for (let i = 0; i < this.formulaArray.length; i++) {
-        // ここswitchに変更して、*/を×と÷にしたい。
+
         if(typeof this.formulaArray[i] === "number" || (this.formulaArray[i] === '.') || (this.formulaArray[i] === '%')) {
           this.viewFormula += this.formulaArray[i].toString();
           continue;
@@ -118,10 +115,11 @@ export default {
           this.viewFormula += ' ' + this.formulaArray[i] + ' ';
         }
       }
+      console.log(this.formulaArray);
     },
-    updateCounter(checkedValue){
+    updateCounter(inputValue){
       // 乗除計算のカウント
-      if (checkedValue === '×' || checkedValue === '÷' || checkedValue === '%'){
+      if (inputValue === '×' || inputValue === '÷' || inputValue === '%'){
         if(this.formulaArray[this.formulaArray.length - 1] !== '×' || this.formulaArray[this.formulaArray.length - 1] !== '÷' || this.formulaArray[this.formulaArray.length - 1] !== '%') {
           this.MudAndDivCounter += 1;
         }
@@ -132,52 +130,52 @@ export default {
       }
       console.log("counter :"  + this.MudAndDivCounter);
     },
-    calculate() {
+    calculationProcessingOrder() {
       console.log(this.formulaArray);
+      // 小数点の置換
+      this.replaceDecimalPoint();
       // %の計算
       this.calcPercent();
-      // 演算子の置換
-      this.replaceOperators();
 
-      // formulaArrayを用いて計算する。
-      for (let i = 0; i < this.formulaArray.length; i++){
-
-        if (typeof this.formulaArray[i] === "number" ){
-          // 数字の時はスキップ
-          continue;
-        } else if(this.formulaArray[i] === '*' || this.formulaArray[i] === '/'){
-          // *,/の時に乗除カウンターを減らす
-          this.MudAndDivCounter -= 1;
-        }
+      // formulaArrayの要素数が1になるまで計算を繰り返す。
+      while(this.formulaArray.length > 1){
         
-        // 乗除カウンターが0の時のみ加減計算も可能にする
-        if (this.MudAndDivCounter === 0 || this.formulaArray[i] === '*' || this.formulaArray[i] === '/') {
-          this.formulaArray[i] = this.calc(this.formulaArray[i - 1], this.formulaArray[i], this.formulaArray[i + 1], i);
-          // 計算後にformulaArrayの配列を整理
-          if (this.formulaArray.length > 1){
-            this.formulaArray.splice(i + 1, 1);
-            this.formulaArray.splice(i - 1, 1);
+        // formulaArrayを用いて計算する。
+        for (let i = 0; i < this.formulaArray.length; i++){
+  
+          if (typeof this.formulaArray[i] === "number" ){
+            // 数字の時はスキップ
+            continue;
+          } else if(this.formulaArray[i] === '×' || this.formulaArray[i] === '÷'){
+            // *,/の時に乗除カウンターを減らす
+            this.MudAndDivCounter -= 1;
+          }
+          
+          // 乗除カウンターが0の時のみ加減計算も可能にする
+          if (this.MudAndDivCounter === 0 || this.formulaArray[i] === '×' || this.formulaArray[i] === '÷') {
+            this.formulaArray[i] = this.calc(this.formulaArray[i - 1], this.formulaArray[i], this.formulaArray[i + 1], i);
+            // 計算後にformulaArrayの配列を整理
+            if (this.formulaArray.length > 1){
+              this.formulaArray.splice(i + 1, 1);
+              this.formulaArray.splice(i - 1, 1);
+            }
           }
         }
+      }
 
-      }
-      if (this.formulaArray.length === 1) {
-        this.showCEButton = !this.showCEButton;
-        // 小数点を丸める。一部の小数値をうまく丸められない誤差を調整。
-        this.formulaArray[0] = Math.round(this.formulaArray[0] * 10000000000) / 10000000000;
-        this.result = "= " + this.formulaArray[0];
-        console.log("counter :"  + this.MudAndDivCounter);
-        return this.result;
-      } else {
-        this.calculate();
-      }
+      this.showCEButton = !this.showCEButton;
+      // 小数点を丸める。一部の小数値をうまく丸められない誤差を調整。
+      this.formulaArray[0] = Math.round(this.formulaArray[0] * 10000000000) / 10000000000;
+      this.result = "= " + this.formulaArray[0];
+      console.log("counter :"  + this.MudAndDivCounter);
+      return this.result;
     },
-    calc(beforeOperands, operator ,afterOperands, index){
+    calc(beforeOperands, operator ,afterOperands){
       // 演算子で計算を切り替え
       switch (operator) {
-        case '*':
+        case '×':
           return beforeOperands * afterOperands;
-        case '/':
+        case '÷':
           return beforeOperands / afterOperands;
         case '+':
           return beforeOperands + afterOperands;
@@ -198,18 +196,11 @@ export default {
           }
         }
     },
-    replaceOperators(){
+    replaceDecimalPoint(){
       // 演算子の置換
       for (let i = 0; i < this.formulaArray.length; i++){
 
-        switch (this.formulaArray[i]) {
-          case '×':
-            this.formulaArray[i] = '*';
-            continue;
-          case '÷':
-            this.formulaArray[i] = '/';
-            continue;
-          case '.':
+        if (this.formulaArray[i] === '.') {
             this.formulaArray[i - 1] =Number(this.formulaArray[i - 1] + '.' + this.formulaArray[i + 1]);
             this.formulaArray.splice(i, 2);
         }
